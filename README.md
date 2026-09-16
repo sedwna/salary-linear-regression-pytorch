@@ -1,175 +1,101 @@
-# Salary Prediction with Linear Regression
+# Salary Prediction with Linear Regression in PyTorch
 
-This project demonstrates how to predict salary based on years of experience using a **custom Linear Regression model** implemented in **PyTorch**. The model is trained using gradient descent to minimize the **Mean Squared Error (MSE)** loss. The dataset is preprocessed, split into training and testing sets, and visualized to provide insights into the relationship between experience and salary.
+Predicting salary from years of experience with a **simple linear regression model written from scratch in PyTorch**. The gradients and gradient-descent updates are hand-written; no `nn.Module` or `optim`.
 
----
-
-## Table of Contents
-
-1. [Description](#description)
-2. [Dataset](#dataset)
-3. [Installation](#installation)
-4. [Usage](#usage)
-5. [Code Overview](#code-overview)
-6. [Results](#results)
-7. [Visualization](#visualization)
-
----
-
-## Description
-
-This project implements a **Linear Regression model** from scratch using **PyTorch** to predict salary based on years of experience. The model is trained using **gradient descent** to minimize the **Mean Squared Error (MSE)** loss. The dataset is preprocessed with **standardization** and split into training and test sets for evaluation.
-
----
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sedwna/salary-linear-regression-pytorch/blob/main/src/Simple_linear_regression.ipynb)
 
 ## Dataset
 
-The dataset contains two columns:
-- **Experience Years**: Number of years of work experience.
-- **Salary**: Corresponding salary in USD.
+A two-column dataset (`Experience Years`, `Salary`) with 40 rows. The notebook loads it from [ybifoundation/Dataset](https://github.com/ybifoundation/Dataset/raw/main/Salary%20Data.csv), and a copy is in `data/Salary Data.csv`.
 
-The dataset is sourced from [Salary Data](https://github.com/ybifoundation/Dataset/raw/main/Salary%20Data.csv).
+| Experience Years | Salary |
+|-----------------:|-------:|
+| 1.1 | 39343 |
+| 1.2 | 42774 |
+| 1.3 | 46205 |
+| 1.5 | 37731 |
+| 2.0 | 43525 |
 
-### Example Data
+## Approach
 
-| Experience Years | Salary  |
-|------------------|---------|
-| 1.1              | 39343   |
-| 1.2              | 42774   |
-| 1.3              | 46205   |
-| 1.5              | 37731   |
-| 2.0              | 43525   |
+1. **Split:** 70% train / 30% test (`train_test_split(train_size=0.7)`), which gives 28 train and 12 test samples.
+2. **Scaling:** separate `StandardScaler`s for X and y, fitted on the training data only.
+3. **Model:** a custom `LinearRegression` class with two parameters, `theta0` (weight) and `theta1` (bias):
+   - prediction: `y_hat = X * theta0 + theta1`
+   - loss: Mean Squared Error
+   - gradients computed by hand, parameters updated by gradient descent
+4. **Training:** `model.fit(X_train, y_train, n=20, eta=0.1)`.
+5. **Evaluation:** MSE on the scaled test set; predictions are inverse-transformed back to salaries.
 
----
+```python
+class LinearRegression():
+    def linear_regression(self):
+        self.y_hat = self.X * self.theta0 + self.theta1
 
-## Installation
+    def calc_gradient(self):
+        error = self.y_hat - self.y
+        self.grad_theta0 = 2 * torch.mean(self.X * error)
+        self.grad_theta1 = 2 * torch.mean(error)
 
-To run this project, ensure you have the following dependencies installed:
-
-```bash
-pip install torch numpy pandas matplotlib scikit-learn
+    def update(self):
+        self.theta0 = self.theta0 - self.eta * self.grad_theta0
+        self.theta1 = self.theta1 - self.eta * self.grad_theta1
 ```
-
----
-
-## Usage
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/sedwna/Salary-Dataset-Simple-linear-regression-with-pytorch.git
-   ```
-
-2. **Run the Jupyter Notebook**:
-   - Open the notebook (`salary_prediction.ipynb`) and execute all cells to train the model and visualize results.
-
----
-
-## Code Overview
-
-### 1. **Data Loading & Preprocessing**
-   ```python
-   salary = pd.read_csv('https://github.com/ybifoundation/Dataset/raw/main/Salary%20Data.csv')
-   X = salary['Experience Years'].values
-   y = salary['Salary'].values
-   X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7)
-   ```
-
-### 2. **Standard Scaling**
-   ```python
-   x_scaler = StandardScaler()
-   X_train = x_scaler.fit_transform(X_train)
-   y_scaler = StandardScaler()
-   y_train = y_scaler.fit_transform(y_train)
-   ```
-
-### 3. **Custom Linear Regression Model**
-   ```python
-   class LinearRegression:
-       def fit(self, x, y, n=100, eta=0.5):
-           # Training loop with gradient descent
-           for i in range(n):
-               self.linear_regression()
-               self.mse()
-               self.calc_gradient()
-               self.update()
-   ```
-
-### 4. **Training & Evaluation**
-   ```python
-   model = LinearRegression()
-   model.fit(X_train, y_train, n=20, eta=0.1)
-   y_hat = model.test(X_test, y_test)
-   ```
-
----
 
 ## Results
 
-- **Training Loss**: Decreased from **0.57** to **0.039** after 20 epochs.
-- **Test Loss**: **0.0403** (MSE on scaled data).
+From the saved notebook run (the split has no fixed seed, so the numbers change between runs):
 
-### Example Predictions
-After inverse scaling, the predicted and actual salaries are compared:
+- **Training loss (scaled MSE):** `0.5696` at the first iteration, `0.0392` after 20 iterations
+- **Test loss (scaled MSE):** `0.0403`
+- **Learned parameters:** `theta0 = 0.9851`, `theta1 = -0.0069`
 
-```python
-# Inverse transform scaled predictions
-y_hat_actual = y_scaler.inverse_transform(y_hat)
-y_test_actual = y_scaler.inverse_transform(y_test)
-```
+Sample test predictions after inverse scaling:
 
 | Experience Years | Actual Salary | Predicted Salary |
-|------------------|---------------|------------------|
-| 7.1              | 98273         | 93108            |
-| 5.5              | 82200         | 77795            |
-| 1.3              | 46205         | 37598            |
+|-----------------:|--------------:|-----------------:|
+| 7.1 | 98273 | 93108.62 |
+| 5.5 | 82200 | 77795.38 |
+| 1.3 | 46205 | 37598.11 |
 
----
+## Visualizations
 
-## Visualization
+| Experience vs Salary | Train vs Test split | Real vs Predicted |
+|:---:|:---:|:---:|
+| ![Experience vs Salary](photo/p1.png) | ![Train vs Test](photo/p2.png) | ![Real vs Predicted](photo/p3.png) |
 
-### 1. **Scatter Plot of Experience vs Salary**
-   ```python
-   salary.plot(kind='scatter', x='Experience Years', y='Salary')
-   plt.show()
-   ```
+## Tech Stack
 
-   ![Experience vs Salary](photo/p1.png) 
+Python, PyTorch, NumPy, pandas, scikit-learn (split and scaling), Matplotlib, Jupyter / Google Colab
 
-### 2. **Train vs Test Data**
-   ```python
-   plt.scatter(X_train, y_train, s=100)
-   plt.scatter(X_test, y_test, s=100)
-   plt.legend(['Train', 'Test'])
-   plt.show()
-   ```
+## Project Structure
 
-   ![Train vs Test Data](photo/p2.png) 
+```
+salary-linear-regression-pytorch/
+├── data/
+│   └── Salary Data.csv
+├── photo/                          # plots used in this README
+│   ├── p1.png
+│   ├── p2.png
+│   └── p3.png
+├── src/
+│   └── Simple_linear_regression.ipynb
+└── README.md
+```
 
-### 3. **Real vs Predicted Salaries**
-   ```python
-   plt.scatter(X_test, y_test, s=20)
-   plt.scatter(X_test, y_hat, s=60)
-   plt.legend(['Real', 'Predict'])
-   plt.show()
-   ```
+## How to Run
 
-   ![Real vs Predicted Salaries](photo/p3.png) 
+Open the notebook in Google Colab with the badge above, or run it locally:
 
----
+```bash
+git clone https://github.com/sedwna/salary-linear-regression-pytorch.git
+cd salary-linear-regression-pytorch
+pip install torch numpy pandas matplotlib scikit-learn notebook
+jupyter notebook src/Simple_linear_regression.ipynb
+```
 
-## Contributing
-
-Contributions are welcome! If you'd like to contribute, please:
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Submit a pull request.
-
----
+The notebook downloads the dataset from the URL above, so it needs internet access.
 
 ## Contact
 
-For questions or feedback, feel free to reach out:
-- **Email**:  [sajaddehqan2002@gmail.com]
-
----
-
+Email: sajaddehqan2002@gmail.com
